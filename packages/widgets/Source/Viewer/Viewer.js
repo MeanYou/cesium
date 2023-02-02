@@ -28,6 +28,7 @@ import {
   Property,
   SceneMode,
   ScreenSpaceEventType,
+  TileProviderManager,
   TimeDynamicPointCloud,
   VoxelPrimitive,
 } from "@cesium/engine";
@@ -683,11 +684,18 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
     scene.imageryLayers.removeAll();
     scene.imageryLayers.addImageryProvider(options.imageryProvider);
   }
+
+  this._removeTerrainProviderReadyListener = undefined;
   if (defined(options.terrainProvider)) {
     if (createBaseLayerPicker) {
       baseLayerPicker.viewModel.selectedTerrain = undefined;
     }
-    scene.terrainProvider = options.terrainProvider;
+
+    if (options.terrainProvider instanceof TileProviderManager) {
+      setTileProviderManager(this, scene, options.terrainProvider);
+    } else {
+      scene.terrainProvider = options.terrainProvider;
+    }
   }
 
   // Navigation Help Button
@@ -1243,6 +1251,11 @@ Object.defineProperties(Viewer.prototype, {
       return this.scene.terrainProvider;
     },
     set: function (terrainProvider) {
+      if (terrainProvider instanceof TileProviderManager) {
+        setTileProviderManager(this, this.scene, terrainProvider);
+        return;
+      }
+
       this.scene.terrainProvider = terrainProvider;
     },
   },
@@ -1773,8 +1786,33 @@ Viewer.prototype.destroy = function () {
     this._dataSourceCollection = this._dataSourceCollection.destroy();
   }
 
+  this._removeTerrainProviderReadyListener =
+    this._removeTerrainProviderReadyListener &&
+    this._removeTerrainProviderReadyListener();
+
   return destroyObject(this);
 };
+
+function setTileProviderManager(viewer, scene, manager) {
+  // Remove the last in process event, if there is one
+  viewer._removeTerrainProviderReadyListener =
+    viewer._removeTerrainProviderReadyListener &&
+    viewer._removeTerrainProviderReadyListener();
+
+  // Set a placeholder
+  scene.globe.terrainProvider = undefined;
+
+  viewer._removeTerrainProviderReadyListener = manager.readyEvent.addEventListener(
+    (provider) => {
+      // TODO: runtime error?
+      if (defined(scene) && defined(scene.globe)) {
+        scene.globe.terrainProvider = provider;
+      }
+
+      viewer._removeTerrainProviderReadyListener();
+    }
+  );
+}
 
 /**
  * @private
