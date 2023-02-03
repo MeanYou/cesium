@@ -6,6 +6,7 @@ import {
   CesiumWidget,
   Cesium3DTileFeature,
   Cesium3DTileset,
+  Check,
   Clock,
   computeFlyToLocationForRectangle,
   ConstantPositionProperty,
@@ -28,7 +29,7 @@ import {
   Property,
   SceneMode,
   ScreenSpaceEventType,
-  TileProviderManager,
+  Terrain,
   TimeDynamicPointCloud,
   VoxelPrimitive,
 } from "@cesium/engine";
@@ -315,7 +316,7 @@ function enableVRUI(viewer, enabled) {
  * @property {ProviderViewModel} [selectedTerrainProviderViewModel] The view model for the current base terrain layer, if not supplied the first available base layer is used.  This value is only valid if `baseLayerPicker` is set to true.
  * @property {ProviderViewModel[]} [terrainProviderViewModels=createDefaultTerrainProviderViewModels()] The array of ProviderViewModels to be selectable from the BaseLayerPicker.  This value is only valid if `baseLayerPicker` is set to true.
  * @property {ImageryProvider} [imageryProvider=createWorldImagery()] The imagery provider to use.  This value is only valid if `baseLayerPicker` is set to false.
- * @property {TerrainProvider} [terrainProvider=new EllipsoidTerrainProvider()] The terrain provider to use
+ * @property {TerrainProvider|Terrain} [terrainProvider=new EllipsoidTerrainProvider()] The terrain provider to use
  * @property {SkyBox|false} [skyBox] The skybox used to render the stars.  When <code>undefined</code>, the default stars are used. If set to <code>false</code>, no skyBox, Sun, or Moon will be added.
  * @property {SkyAtmosphere|false} [skyAtmosphere] Blue sky, and the glow around the Earth's limb.  Set to <code>false</code> to turn it off.
  * @property {Element|String} [fullscreenElement=document.body] The element or id to be placed into fullscreen mode when the full screen button is pressed.
@@ -376,7 +377,7 @@ function enableVRUI(viewer, enabled) {
  *     // Start in Columbus Viewer
  *     sceneMode: Cesium.SceneMode.COLUMBUS_VIEW,
  *     // Use Cesium World Terrain
- *     terrainProvider: await Cesium.createWorldTerrainAsync(),
+ *     terrainProvider: Cesium.Terrain.fromWorldTerrain(),
  *     // Hide the base layer picker
  *     baseLayerPicker: false,
  *     // Use OpenStreetMaps
@@ -691,7 +692,7 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
       baseLayerPicker.viewModel.selectedTerrain = undefined;
     }
 
-    if (options.terrainProvider instanceof TileProviderManager) {
+    if (options.terrainProvider instanceof Terrain) {
       setTileProviderManager(this, scene, options.terrainProvider);
     } else {
       scene.terrainProvider = options.terrainProvider;
@@ -1251,11 +1252,6 @@ Object.defineProperties(Viewer.prototype, {
       return this.scene.terrainProvider;
     },
     set: function (terrainProvider) {
-      if (terrainProvider instanceof TileProviderManager) {
-        setTileProviderManager(this, this.scene, terrainProvider);
-        return;
-      }
-
       this.scene.terrainProvider = terrainProvider;
     },
   },
@@ -1804,7 +1800,6 @@ function setTileProviderManager(viewer, scene, manager) {
 
   viewer._removeTerrainProviderReadyListener = manager.readyEvent.addEventListener(
     (provider) => {
-      // TODO: runtime error?
       if (defined(scene) && defined(scene.globe)) {
         scene.globe.terrainProvider = provider;
       }
@@ -1813,6 +1808,21 @@ function setTileProviderManager(viewer, scene, manager) {
     }
   );
 }
+
+/**
+ * Use a {@link Terrain} helper object to update to the terrain provider providing surface geometry for the globe by handling any asynchronous events.
+ * @param {Terrain} terrain Terrain object for the intended terrain provider
+ * @return {Terrain} terrain Terrain object for the intended terrain provider
+ */
+Viewer.prototype.setTerrain = function (terrain) {
+  //>>includeStart('debug', pragmas.debug);
+  Check.typeOf.object("terrain", terrain);
+  //>>includeEnd('debug')
+
+  setTileProviderManager(this, this.scene, terrain);
+
+  return terrain;
+};
 
 /**
  * @private

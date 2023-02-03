@@ -1439,7 +1439,7 @@ function getTileReadyCallback(tileImageriesToFree, layer, terrainProvider) {
 
 GlobeSurfaceTileProvider.prototype._onLayerAdded = function (layer, index) {
   if (layer.show) {
-    const terrainProvider = this._terrainProvider; // TODO: ?
+    const terrainProvider = this._terrainProvider;
 
     const that = this;
     const imageryProvider = layer.imageryProvider;
