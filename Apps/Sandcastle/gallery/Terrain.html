@@ -40,7 +40,7 @@
         "use strict";
         //Sandcastle_Begin
         const viewer = new Cesium.Viewer("cesiumContainer", {
-          terrainProvider: Cesium.TileProviderManager.fromWorldTerrain({
+          terrainProvider: Cesium.Terrain.fromWorldTerrain({
             requestWaterMask: true,
             requestVertexNormals: true,
           }),
@@ -86,11 +86,11 @@
             {
               text: "CesiumTerrainProvider - Cesium World Terrain",
               onselect: function () {
-                viewer.terrainProvider = Cesium.TileProviderManager.fromWorldTerrain(
-                  {
+                viewer.setTerrain(
+                  Cesium.Terrain.fromWorldTerrain({
                     requestWaterMask: true,
                     requestVertexNormals: true,
-                  }
+                  })
                 );
                 viewer.scene.globe.enableLighting = true;
               },
@@ -98,16 +98,16 @@
             {
               text: "CesiumTerrainProvider - Cesium World Terrain - no effects",
               onselect: function () {
-                viewer.terrainProvider = Cesium.TileProviderManager.fromWorldTerrain();
+                viewer.setTerrain(Cesium.Terrain.fromWorldTerrain());
               },
             },
             {
               text: "CesiumTerrainProvider - Cesium World Terrain w/ Lighting",
               onselect: function () {
-                viewer.terrainProvider = Cesium.TileProviderManager.fromWorldTerrain(
-                  {
+                viewer.setTerrain(
+                  Cesium.Terrain.fromWorldTerrain({
                     requestVertexNormals: true,
-                  }
+                  })
                 );
                 viewer.scene.globe.enableLighting = true;
               },
@@ -115,10 +115,10 @@
             {
               text: "CesiumTerrainProvider - Cesium World Terrain w/ Water",
               onselect: function () {
-                viewer.terrainProvider = Cesium.TileProviderManager.fromWorldTerrain(
-                  {
+                viewer.setTerrain(
+                  Cesium.Terrain.fromWorldTerrain({
                     requestWaterMask: true,
-                  }
+                  })
                 );
               },
             },
@@ -137,12 +137,14 @@
             {
               text: "VRTheWorldTerrainProvider",
               onselect: function () {
-                viewer.terrainProvider = new Cesium.TileProviderManager(
-                  Cesium.VRTheWorldTerrainProvider.fromUrl(
-                    "http://www.vr-theworld.com/vr-theworld/tiles1.0.0/73/",
-                    {
-                      credit: "Terrain data courtesy VT MÄK",
-                    }
+                viewer.setTerrain(
+                  new Cesium.Terrain(
+                    Cesium.VRTheWorldTerrainProvider.fromUrl(
+                      "http://www.vr-theworld.com/vr-theworld/tiles1.0.0/73/",
+                      {
+                        credit: "Terrain data courtesy VT MÄK",
+                      }
+                    )
                   )
                 );
               },
@@ -150,9 +152,11 @@
             {
               text: "ArcGISTerrainProvider",
               onselect: function () {
-                viewer.terrainProvider = new Cesium.TileProviderManager(
-                  Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(
-                    "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer"
+                viewer.setTerrain(
+                  new Cesium.Terrain(
+                    Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(
+                      "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer"
+                    )
                   )
                 );
               },

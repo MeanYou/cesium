@@ -1,8 +1,6 @@
 import Check from "../Core/Check.js";
 import Event from "../Core/Event.js";
 import createWorldTerrainAsync from "../Core/createWorldTerrainAsync.js";
-import TerrainProvider from "../Core/TerrainProvider.js";
-import DeveloperError from "../Core/RuntimeError.js";
 
 function handleError(errorEvent, error) {
   if (errorEvent.numberOfListeners > 0) {
@@ -20,12 +18,6 @@ async function handlePromise(instance, promise) {
   } catch (error) {
     handleError(instance._errorEvent, error);
   }
-
-  //>>includeStart('debug', pragmas.debug);
-  if (!(provider instanceof TerrainProvider)) {
-    throw new DeveloperError("Provider is not an instance of TerrainProvider.");
-  }
-  //>>includeEnd('debug');
 
   instance._provider = provider;
   instance._readyEvent.raiseEvent(provider);
@@ -75,7 +67,6 @@ function Terrain(providerPromise) {
   this._provider = undefined;
   this._errorEvent = new Event();
   this._readyEvent = new Event();
-  this._removeListener = undefined;
 
   handlePromise(this, providerPromise);
 }
