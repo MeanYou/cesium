@@ -9,7 +9,7 @@ import DeveloperError from "../Core/DeveloperError.js";
 import Ellipsoid from "../Core/Ellipsoid.js";
 import HeadingPitchRoll from "../Core/HeadingPitchRoll.js";
 import IntersectionTests from "../Core/IntersectionTests.js";
-import KeyboardEventModifier from "../Core/KeyboardEventModifier.js";
+// import KeyboardEventModifier from "../Core/KeyboardEventModifier.js";
 import CesiumMath from "../Core/Math.js";
 import Matrix3 from "../Core/Matrix3.js";
 import Matrix4 from "../Core/Matrix4.js";
@@ -159,7 +159,7 @@ function ScreenSpaceCameraController(scene) {
    * @default [{@link CameraEventType.RIGHT_DRAG}, {@link CameraEventType.WHEEL}, {@link CameraEventType.PINCH}]
    */
   this.zoomEventTypes = [
-    CameraEventType.RIGHT_DRAG,
+    // CameraEventType.RIGHT_DRAG,
     CameraEventType.WHEEL,
     CameraEventType.PINCH,
   ];
@@ -191,16 +191,17 @@ function ScreenSpaceCameraController(scene) {
    * }]
    */
   this.tiltEventTypes = [
-    CameraEventType.MIDDLE_DRAG,
+    // CameraEventType.MIDDLE_DRAG,
     CameraEventType.PINCH,
-    {
-      eventType: CameraEventType.LEFT_DRAG,
-      modifier: KeyboardEventModifier.CTRL,
-    },
-    {
-      eventType: CameraEventType.RIGHT_DRAG,
-      modifier: KeyboardEventModifier.CTRL,
-    },
+    CameraEventType.RIGHT_DRAG
+    // {
+    //   eventType: CameraEventType.LEFT_DRAG,
+    //   modifier: KeyboardEventModifier.CTRL,
+    // },
+    // {
+    //   eventType: CameraEventType.RIGHT_DRAG,
+    //   modifier: KeyboardEventModifier.CTRL,
+    // },
   ];
   /**
    * The input that allows the user to change the direction the camera is viewing. This only applies in 3D and Columbus view modes.
@@ -212,10 +213,11 @@ function ScreenSpaceCameraController(scene) {
    * @type {CameraEventType|Array|undefined}
    * @default { eventType : {@link CameraEventType.LEFT_DRAG}, modifier : {@link KeyboardEventModifier.SHIFT} }
    */
-  this.lookEventTypes = {
-    eventType: CameraEventType.LEFT_DRAG,
-    modifier: KeyboardEventModifier.SHIFT,
-  };
+  this.lookEventTypes = CameraEventType.MIDDLE_DRAG;
+  // {
+  //   eventType: CameraEventType.LEFT_DRAG,
+  //   modifier: KeyboardEventModifier.SHIFT,
+  // };
   /**
    * The minimum height the camera must be before picking the terrain instead of the ellipsoid.
    * @type {Number}
@@ -690,7 +692,7 @@ function handleZoom(
         object._zoomingUnderground ||
         (camera.positionCartographic.height < 3000.0 &&
           Math.abs(Cartesian3.dot(camera.direction, cameraPositionNormal)) <
-            0.6)
+          0.6)
       ) {
         zoomOnVector = true;
       } else {
@@ -2035,9 +2037,20 @@ var pan3DTemp3 = new Cartesian3();
 var pan3DStartMousePosition = new Cartesian2();
 var pan3DEndMousePosition = new Cartesian2();
 
+// 定义最大最小旋转角度
+var minimumPitch = CesiumMath.toRadians(-80);
+var maximumPitch = CesiumMath.toRadians(-10);
+
 function pan3D(controller, startPosition, movement, ellipsoid) {
   var scene = controller._scene;
   var camera = scene.camera;
+
+  if (
+    (camera.pitch > maximumPitch && movement.endPosition.y < movement.startPosition.y) ||
+    (camera.pitch < minimumPitch && movement.endPosition.y > movement.startPosition.y)
+  ) {
+    movement.endPosition.y = movement.startPosition.y;
+  }
 
   var startMousePosition = Cartesian2.clone(
     movement.startPosition,
@@ -2233,23 +2246,30 @@ function tilt3D(controller, startPosition, movement) {
     return;
   }
 
+  if (
+    (camera.pitch > maximumPitch && movement.endPosition.y < movement.startPosition.y) ||
+    (camera.pitch < minimumPitch && movement.endPosition.y > movement.startPosition.y)
+  ) {
+    movement.endPosition.y = movement.startPosition.y;
+  }
+
   if (defined(movement.angleAndHeight)) {
     movement = movement.angleAndHeight;
   }
 
-  if (!Cartesian2.equals(startPosition, controller._tiltCenterMousePosition)) {
-    controller._tiltOnEllipsoid = false;
-    controller._looking = false;
-  }
+  // if (!Cartesian2.equals(startPosition, controller._tiltCenterMousePosition)) {
+  //   controller._tiltOnEllipsoid = false;
+  //   controller._looking = false;
+  // }
 
-  if (controller._looking) {
-    var up = controller._ellipsoid.geodeticSurfaceNormal(
-      camera.position,
-      tilt3DLookUp
-    );
-    look3D(controller, startPosition, movement, up);
-    return;
-  }
+  // if (controller._looking) {
+  //   var up = controller._ellipsoid.geodeticSurfaceNormal(
+  //     camera.position,
+  //     tilt3DLookUp
+  //   );
+  //   look3D(controller, startPosition, movement, up);
+  //   return;
+  // }
 
   var ellipsoid = controller._ellipsoid;
   var cartographic = ellipsoid.cartesianToCartographic(
@@ -2368,25 +2388,26 @@ function tilt3DOnTerrain(controller, startPosition, movement) {
     center = pickGlobe(controller, startPosition, tilt3DCenter);
 
     if (!defined(center)) {
-      ray = camera.getPickRay(startPosition, tilt3DRay);
-      intersection = IntersectionTests.rayEllipsoid(ray, ellipsoid);
-      if (!defined(intersection)) {
-        var cartographic = ellipsoid.cartesianToCartographic(
-          camera.position,
-          tilt3DCart
-        );
-        if (cartographic.height <= controller._minimumTrackBallHeight) {
-          controller._looking = true;
-          var up = controller._ellipsoid.geodeticSurfaceNormal(
-            camera.position,
-            tilt3DLookUp
-          );
-          look3D(controller, startPosition, movement, up);
-          Cartesian2.clone(startPosition, controller._tiltCenterMousePosition);
-        }
-        return;
-      }
-      center = Ray.getPoint(ray, intersection.start, tilt3DCenter);
+      return;
+      // ray = camera.getPickRay(startPosition, tilt3DRay);
+      // intersection = IntersectionTests.rayEllipsoid(ray, ellipsoid);
+      // if (!defined(intersection)) {
+      //   var cartographic = ellipsoid.cartesianToCartographic(
+      //     camera.position,
+      //     tilt3DCart
+      //   );
+      //   if (cartographic.height <= controller._minimumTrackBallHeight) {
+      //     controller._looking = true;
+      //     var up = controller._ellipsoid.geodeticSurfaceNormal(
+      //       camera.position,
+      //       tilt3DLookUp
+      //     );
+      //     look3D(controller, startPosition, movement, up);
+      //     Cartesian2.clone(startPosition, controller._tiltCenterMousePosition);
+      //   }
+      //   return;
+      // }
+      // center = Ray.getPoint(ray, intersection.start, tilt3DCenter);
     }
 
     if (cameraUnderground) {
@@ -2554,6 +2575,13 @@ function look3D(controller, startPosition, movement, rotationAxis) {
   var scene = controller._scene;
   var camera = scene.camera;
 
+  if (
+    (camera.pitch > maximumPitch && movement.endPosition.y > movement.startPosition.y) ||
+    (camera.pitch < minimumPitch && movement.endPosition.y < movement.startPosition.y)
+  ) {
+    movement.endPosition.y = movement.startPosition.y;
+  }
+
   var startPos = look3DStartPos;
   startPos.x = movement.startPosition.x;
   startPos.y = 0.0;
@@ -2592,14 +2620,18 @@ function look3D(controller, startPosition, movement, rotationAxis) {
 
   angle = movement.startPosition.x > movement.endPosition.x ? -angle : angle;
 
-  var horizontalRotationAxis = controller._horizontalRotationAxis;
-  if (defined(rotationAxis)) {
-    camera.look(rotationAxis, -angle);
-  } else if (defined(horizontalRotationAxis)) {
-    camera.look(horizontalRotationAxis, -angle);
-  } else {
-    camera.lookLeft(angle);
+  // var horizontalRotationAxis = controller._horizontalRotationAxis;
+  // if (defined(rotationAxis)) {
+  var ellipsoid = controller._ellipsoid;
+  if (!defined(rotationAxis)) {
+    rotationAxis = ellipsoid.geodeticSurfaceNormal(camera.position, scratchLookUp);
   }
+  camera.look(rotationAxis, -angle);
+  // } else if (defined(horizontalRotationAxis)) {
+  //   camera.look(horizontalRotationAxis, -angle);
+  // } else {
+  //   camera.lookLeft(angle);
+  // }
 
   startPos.x = 0.0;
   startPos.y = movement.startPosition.y;
@@ -2634,47 +2666,48 @@ function look3D(controller, startPosition, movement, rotationAxis) {
   }
   angle = movement.startPosition.y > movement.endPosition.y ? -angle : angle;
 
-  rotationAxis = defaultValue(rotationAxis, horizontalRotationAxis);
-  if (defined(rotationAxis)) {
-    var direction = camera.direction;
-    var negativeRotationAxis = Cartesian3.negate(
-      rotationAxis,
-      look3DNegativeRot
-    );
-    var northParallel = Cartesian3.equalsEpsilon(
-      direction,
-      rotationAxis,
-      CesiumMath.EPSILON2
-    );
-    var southParallel = Cartesian3.equalsEpsilon(
-      direction,
-      negativeRotationAxis,
-      CesiumMath.EPSILON2
-    );
-    if (!northParallel && !southParallel) {
-      dot = Cartesian3.dot(direction, rotationAxis);
-      var angleToAxis = CesiumMath.acosClamped(dot);
-      if (angle > 0 && angle > angleToAxis) {
-        angle = angleToAxis - CesiumMath.EPSILON4;
-      }
-
-      dot = Cartesian3.dot(direction, negativeRotationAxis);
-      angleToAxis = CesiumMath.acosClamped(dot);
-      if (angle < 0 && -angle > angleToAxis) {
-        angle = -angleToAxis + CesiumMath.EPSILON4;
-      }
-
-      var tangent = Cartesian3.cross(rotationAxis, direction, look3DTan);
-      camera.look(tangent, angle);
-    } else if ((northParallel && angle < 0) || (southParallel && angle > 0)) {
-      camera.look(camera.right, -angle);
+  // rotationAxis = defaultValue(rotationAxis, horizontalRotationAxis);
+  // if (defined(rotationAxis)) {
+  var direction = camera.direction;
+  var negativeRotationAxis = Cartesian3.negate(
+    rotationAxis,
+    look3DNegativeRot
+  );
+  var northParallel = Cartesian3.equalsEpsilon(
+    direction,
+    rotationAxis,
+    CesiumMath.EPSILON2
+  );
+  var southParallel = Cartesian3.equalsEpsilon(
+    direction,
+    negativeRotationAxis,
+    CesiumMath.EPSILON2
+  );
+  if (!northParallel && !southParallel) {
+    dot = Cartesian3.dot(direction, rotationAxis);
+    var angleToAxis = CesiumMath.acosClamped(dot);
+    if (angle > 0 && angle > angleToAxis) {
+      angle = angleToAxis - CesiumMath.EPSILON4;
     }
-  } else {
-    camera.lookUp(angle);
+
+    dot = Cartesian3.dot(direction, negativeRotationAxis);
+    angleToAxis = CesiumMath.acosClamped(dot);
+    if (angle < 0 && -angle > angleToAxis) {
+      angle = -angleToAxis + CesiumMath.EPSILON4;
+    }
+
+    var tangent = Cartesian3.cross(rotationAxis, direction, look3DTan);
+    camera.look(tangent, angle);
+  } else if ((northParallel && angle < 0) || (southParallel && angle > 0)) {
+    camera.look(camera.right, -angle);
   }
+  // } else {
+  //   camera.lookUp(angle);
+  // }
 }
 
 function update3D(controller) {
+  // 沿着地球中心旋转，不是平移，所以叫spin
   reactToInput(
     controller,
     controller.enableRotate,
@@ -2781,7 +2814,7 @@ function adjustHeightForTerrain(controller) {
 /**
  * @private
  */
-ScreenSpaceCameraController.prototype.onMap = function () {
+ScreenSpaceCameraController.prototype.onMap = function() {
   var scene = this._scene;
   var mode = scene.mode;
   var camera = scene.camera;
@@ -2802,7 +2835,7 @@ var scratchPreviousDirection = new Cartesian3();
 /**
  * @private
  */
-ScreenSpaceCameraController.prototype.update = function () {
+ScreenSpaceCameraController.prototype.update = function() {
   var scene = this._scene;
   var camera = scene.camera;
   var globe = scene.globe;
@@ -2889,7 +2922,7 @@ ScreenSpaceCameraController.prototype.update = function () {
  *
  * @see ScreenSpaceCameraController#destroy
  */
-ScreenSpaceCameraController.prototype.isDestroyed = function () {
+ScreenSpaceCameraController.prototype.isDestroyed = function() {
   return false;
 };
 
@@ -2908,7 +2941,7 @@ ScreenSpaceCameraController.prototype.isDestroyed = function () {
  *
  * @see ScreenSpaceCameraController#isDestroyed
  */
-ScreenSpaceCameraController.prototype.destroy = function () {
+ScreenSpaceCameraController.prototype.destroy = function() {
   this._tweens.removeAll();
   this._aggregator = this._aggregator && this._aggregator.destroy();
   return destroyObject(this);
